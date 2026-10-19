@@ -173,9 +173,15 @@ canvas {
 
 .loading {
   margin-top: 80px;
+  max-width: 90%;
   text-align: center;
   color: var(--text-secondary);
   line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+
+.loading a {
+  color: #64b5ff;
 }
 
 .zoom-badge {
@@ -263,17 +269,13 @@ canvas {
 
 <body>
 
-<!-- Top navigation -->
 <div class="topbar">
   <a href="index.html" class="home-btn">← Homepage</a>
 </div>
 
-<!-- Zoom indicator -->
 <div class="zoom-badge" id="zoomBadge">100%</div>
 
-<!-- PDF viewer -->
 <div class="viewer" id="viewer">
-
   <div class="canvas-wrap">
 
     <div class="doc-title" id="docTitle">Loading...</div>
@@ -287,24 +289,19 @@ canvas {
     <canvas id="pdfCanvas" style="display:none;"></canvas>
 
   </div>
-
 </div>
 
-<!-- Notification -->
 <div class="toast" id="toast"></div>
 
-<!-- Bottom controls -->
 <div class="bottombar">
 
-  <button class="btn" id="prevBtn" onclick="prevPage()">
+  <button class="btn" id="prevBtn" onclick="prevPage()" disabled>
     ◀ Prev
   </button>
 
-  <span class="page-info" id="pageInfo">
-    — / —
-  </span>
+  <span class="page-info" id="pageInfo">— / —</span>
 
-  <button class="btn" id="nextBtn" onclick="nextPage()">
+  <button class="btn" id="nextBtn" onclick="nextPage()" disabled>
     Next ▶
   </button>
 
@@ -324,7 +321,6 @@ canvas {
 
 </div>
 
-<!-- PDF.js library -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 
 <script>
@@ -339,7 +335,7 @@ const SCALE_MAX = 4;
 const SCALE_STEP = 0.25;
 
 const params = new URLSearchParams(window.location.search);
-const file = params.get("book") || "";
+const requestedFile = params.get("book") || "";
 
 let pdfDoc = null;
 let pageNum = 1;
@@ -347,6 +343,37 @@ let scale = window.innerWidth < 600 ? 1.0 : 1.4;
 let isRendering = false;
 let pendingRender = false;
 let loadingTask = null;
+let renderTask = null;
+
+/*
+  Use the current page's directory as the base.
+  This supports both GitHub user sites and project sites.
+*/
+
+const baseDirectory = new URL(".", window.location.href);
+
+/*
+  Encode each path segment separately so filenames containing
+  spaces can also be handled correctly.
+*/
+
+function resolvePDFUrl(path) {
+  const segments = path.split("/").map(function(segment) {
+    return encodeURIComponent(decodeURIComponent(segment));
+  });
+
+  return new URL(segments.join("/"), baseDirectory).href;
+}
+
+let fileURL = "";
+
+try {
+  if (requestedFile) {
+    fileURL = resolvePDFUrl(requestedFile);
+  }
+} catch (error) {
+  console.error("Invalid PDF filename:", error);
+}
 
 /* =========================
    DOM elements
@@ -369,22 +396,11 @@ const nextBtn = document.getElementById("nextBtn");
 ========================= */
 
 const bookTitles = {
-
-  "importance-me.pdf":
-    "The Importance of Being... Me",
-
-  "coronavirus-journal-2.pdf":
-    "Coronavirus Journal 2020-2022",
-
-  "busy-people.pdf":
-    "My Years at Diver Consolidated Industries",
-
-  "harold-ernest.pdf":
-    "A Search in Ernest",
-
-  "my-diarised-life-1988-2019.pdf":
-    "My Diarised Life 1988–2019",
-
+  "importance-me.pdf": "The Importance of Being... Me",
+  "coronavirus-journal-2.pdf": "Coronavirus Journal 2020-2022",
+  "busy-people.pdf": "My Years at Diver Consolidated Industries",
+  "harold-ernest.pdf": "A Search in Ernest",
+  "my-diarised-life-1988-2019.pdf": "My Diarised Life 1988–2019",
   "my-diarised-life-retirement-2020-2025.pdf":
     "My Diarised Life - in Retirement - 2020–2025"
 };
@@ -394,7 +410,6 @@ const bookTitles = {
 ========================= */
 
 const bookDescriptions = {
-
   "my-diarised-life-1988-2019.pdf":
     "My diary and journal entries during my working life",
 
@@ -406,39 +421,23 @@ const bookDescriptions = {
    Display book information
 ========================= */
 
-if (!file) {
+const fileName = requestedFile.split("/").pop();
 
+if (!requestedFile) {
   docTitle.textContent = "No book selected";
-
   docDescription.textContent =
     "Please return to the homepage and select a book.";
-
-  loading.innerHTML =
-    '<span style="color:#ff5555">No PDF file specified.</span>';
-
+  showLoadingError("No PDF filename was supplied in the page address.");
+} else if (!fileURL) {
+  docTitle.textContent = "Invalid PDF path";
+  showLoadingError("The PDF filename or path could not be processed.");
 } else {
+  docTitle.textContent = bookTitles[fileName] || fileName;
+  docDescription.textContent = bookDescriptions[fileName] || "";
 
-  /*
-    Extract the filename from the requested path.
-    This also supports PDF files stored in subfolders.
-  */
-
-  const fileName = file.split("/").pop();
-
-  docTitle.textContent =
-    bookTitles[fileName] || fileName;
-
-  docDescription.textContent =
-    bookDescriptions[fileName] || "";
-
-  /*
-    Restore the last-read page for this book.
-  */
-
-  const savedPage = localStorage.getItem("page_" + file);
+  const savedPage = localStorage.getItem("page_" + requestedFile);
 
   if (savedPage !== null) {
-
     const parsedPage = parseInt(savedPage, 10);
 
     if (Number.isInteger(parsedPage) && parsedPage >= 1) {
@@ -452,9 +451,36 @@ if (!file) {
 ========================= */
 
 if (typeof pdfjsLib !== "undefined") {
-
   pdfjsLib.GlobalWorkerOptions.workerSrc =
     "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
+}
+
+/* =========================
+   Error display
+========================= */
+
+function showLoadingError(message) {
+  loading.style.display = "block";
+  loading.replaceChildren();
+
+  const errorTitle = document.createElement("div");
+  errorTitle.style.color = "#ff7777";
+  errorTitle.style.fontWeight = "600";
+  errorTitle.textContent = "Unable to load PDF";
+
+  const errorMessage = document.createElement("p");
+  errorMessage.textContent = message;
+
+  loading.append(errorTitle, errorMessage);
+
+  if (fileURL) {
+    const link = document.createElement("a");
+    link.href = fileURL;
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = "Open the PDF file directly to test it";
+    loading.appendChild(link);
+  }
 }
 
 /* =========================
@@ -462,32 +488,25 @@ if (typeof pdfjsLib !== "undefined") {
 ========================= */
 
 async function loadPDF() {
-
-  if (!file) {
+  if (!requestedFile || !fileURL) {
     return;
   }
 
   if (typeof pdfjsLib === "undefined") {
-
-    loading.innerHTML =
-      '<span style="color:#ff5555">PDF reader library failed to load. Please refresh the page.</span>';
-
+    showLoadingError(
+      "The PDF.js library could not be loaded. Check your internet connection or try again later."
+    );
     return;
   }
 
   try {
-
     loading.textContent = "Loading PDF...";
 
     loadingTask = pdfjsLib.getDocument({
-      url: file
+      url: fileURL
     });
 
     pdfDoc = await loadingTask.promise;
-
-    /*
-      Ensure the saved page exists in the current PDF.
-    */
 
     if (pageNum > pdfDoc.numPages) {
       pageNum = 1;
@@ -497,19 +516,27 @@ async function loadPDF() {
     canvas.style.display = "block";
 
     updateButtons();
-
     await render();
 
   } catch (err) {
-
     console.error("Failed to load PDF:", err);
 
-    loading.style.display = "block";
+    let message = "The PDF could not be loaded.";
 
-    loading.innerHTML =
-      '<span style="color:#ff5555">Failed to load PDF. Please check the filename and file location.</span>';
+    if (err && err.name === "MissingPDFException") {
+      message = "The PDF file was not found. Check its filename and location in your GitHub repository.";
+    } else if (err && err.name === "InvalidPDFException") {
+      message = "The server returned a file that PDF.js could not recognise as a valid PDF.";
+    } else if (err && err.name === "UnexpectedResponseException") {
+      message = "The server returned an unexpected response. The file may be missing or unavailable.";
+    } else if (err && err.message) {
+      message += " Details: " + err.message;
+    }
 
+    showLoadingError(message);
     pageInfo.textContent = "— / —";
+    prevBtn.disabled = true;
+    nextBtn.disabled = true;
   }
 }
 
@@ -518,32 +545,27 @@ async function loadPDF() {
 ========================= */
 
 async function render() {
-
-  if (!pdfDoc) {
-    return;
-  }
-
-  /*
-    If a render is already in progress, queue another render.
-  */
+  if (!pdfDoc) return;
 
   if (isRendering) {
     pendingRender = true;
+
+    if (renderTask) {
+      try {
+        renderTask.cancel();
+      } catch (_) {}
+    }
+
     return;
   }
 
   isRendering = true;
 
   try {
-
     const currentPage = pageNum;
-
     const page = await pdfDoc.getPage(currentPage);
 
-    const viewport = page.getViewport({
-      scale: scale
-    });
-
+    const viewport = page.getViewport({ scale: scale });
     const ratio = window.devicePixelRatio || 1;
 
     canvas.width = Math.round(viewport.width * ratio);
@@ -554,35 +576,30 @@ async function render() {
 
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
 
-    await page.render({
+    renderTask = page.render({
       canvasContext: ctx,
       viewport: viewport
-    }).promise;
+    });
 
-    pageInfo.textContent =
-      currentPage + " / " + pdfDoc.numPages;
+    await renderTask.promise;
 
-    localStorage.setItem(
-      "page_" + file,
-      currentPage
-    );
+    pageInfo.textContent = currentPage + " / " + pdfDoc.numPages;
+
+    localStorage.setItem("page_" + requestedFile, currentPage);
 
     updateButtons();
 
   } catch (err) {
-
-    console.error("Failed to render PDF page:", err);
-
-    showToast("Unable to display this page.");
-
+    if (err && err.name !== "RenderingCancelledException") {
+      console.error("Failed to render PDF page:", err);
+      showToast("Unable to display this page.");
+    }
   } finally {
-
     isRendering = false;
+    renderTask = null;
 
     if (pendingRender) {
-
       pendingRender = false;
-
       render();
     }
   }
@@ -593,7 +610,6 @@ async function render() {
 ========================= */
 
 function updateButtons() {
-
   if (!pdfDoc) {
     prevBtn.disabled = true;
     nextBtn.disabled = true;
@@ -609,13 +625,9 @@ function updateButtons() {
 ========================= */
 
 function nextPage() {
-
-  if (!pdfDoc || pageNum >= pdfDoc.numPages) {
-    return;
-  }
+  if (!pdfDoc || pageNum >= pdfDoc.numPages) return;
 
   pageNum++;
-
   viewer.scrollTop = 0;
   viewer.scrollLeft = 0;
 
@@ -624,13 +636,9 @@ function nextPage() {
 }
 
 function prevPage() {
-
-  if (!pdfDoc || pageNum <= 1) {
-    return;
-  }
+  if (!pdfDoc || pageNum <= 1) return;
 
   pageNum--;
-
   viewer.scrollTop = 0;
   viewer.scrollLeft = 0;
 
@@ -643,7 +651,6 @@ function prevPage() {
 ========================= */
 
 function goToPage() {
-
   if (!pdfDoc) {
     showToast("Please wait for the PDF to load.");
     return;
@@ -654,9 +661,7 @@ function goToPage() {
     pageNum
   );
 
-  if (input === null) {
-    return;
-  }
+  if (input === null) return;
 
   const target = Number(input.trim());
 
@@ -666,17 +671,14 @@ function goToPage() {
     target < 1 ||
     target > pdfDoc.numPages
   ) {
-
     showToast(
       "Please enter a page number between 1 and " +
       pdfDoc.numPages + "."
     );
-
     return;
   }
 
   pageNum = target;
-
   viewer.scrollTop = 0;
   viewer.scrollLeft = 0;
 
@@ -691,50 +693,35 @@ function goToPage() {
 ========================= */
 
 function zoomIn() {
-
   if (scale >= SCALE_MAX) {
     showToast("Maximum zoom reached.");
     return;
   }
 
-  scale = Math.min(
-    SCALE_MAX,
-    scale + SCALE_STEP
-  );
-
+  scale = Math.min(SCALE_MAX, scale + SCALE_STEP);
   render();
   showZoom();
 }
 
 function zoomOut() {
-
   if (scale <= SCALE_MIN) {
     showToast("Minimum zoom reached.");
     return;
   }
 
-  scale = Math.max(
-    SCALE_MIN,
-    scale - SCALE_STEP
-  );
-
+  scale = Math.max(SCALE_MIN, scale - SCALE_STEP);
   render();
   showZoom();
 }
 
 function showZoom() {
-
-  zoomBadge.textContent =
-    Math.round(scale * 100) + "%";
-
+  zoomBadge.textContent = Math.round(scale * 100) + "%";
   zoomBadge.classList.add("show");
 
   clearTimeout(window.zoomTimer);
 
   window.zoomTimer = setTimeout(function() {
-
     zoomBadge.classList.remove("show");
-
   }, 1200);
 }
 
@@ -743,16 +730,9 @@ function showZoom() {
 ========================= */
 
 function bookmarkPage() {
+  if (!pdfDoc) return;
 
-  if (!pdfDoc) {
-    return;
-  }
-
-  localStorage.setItem(
-    "bookmark_" + file,
-    pageNum
-  );
-
+  localStorage.setItem("bookmark_" + requestedFile, pageNum);
   showToast("Bookmarked page " + pageNum);
 }
 
@@ -761,19 +741,15 @@ function bookmarkPage() {
 ========================= */
 
 function showToast(msg) {
-
   const toast = document.getElementById("toast");
 
   toast.textContent = msg;
-
   toast.classList.add("show");
 
   clearTimeout(window.toastTimer);
 
   window.toastTimer = setTimeout(function() {
-
     toast.classList.remove("show");
-
   }, 2000);
 }
 
@@ -782,11 +758,6 @@ function showToast(msg) {
 ========================= */
 
 document.addEventListener("keydown", function(e) {
-
-  /*
-    Avoid triggering shortcuts while typing in a form.
-  */
-
   if (
     e.target.tagName === "INPUT" ||
     e.target.tagName === "TEXTAREA"
@@ -795,7 +766,6 @@ document.addEventListener("keydown", function(e) {
   }
 
   switch (e.key) {
-
     case "ArrowRight":
     case "ArrowDown":
       nextPage();
