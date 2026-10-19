@@ -1,117 +1,283 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Patrick Ashley Ernest</title>
-
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <title>Patrick Ashley Ernest</title>
+
+  <meta name="description" content="The official website of Patrick Ashley Ernest. A repository of personal memoirs, diaries, journals and legacy documents.">
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap"
+    rel="stylesheet"
+  >
 
   <style>
+    /* =========================
+       Global styles
+    ========================= */
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
     body {
       margin: 0;
       font-family: 'Inter', sans-serif;
       background: #f2f2f2;
       color: #111;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
 
+    /* =========================
+       Header
+    ========================= */
+
     header {
-      padding: 80px 20px 40px;
+      padding: 76px 20px 38px;
       text-align: center;
+    }
+
+    .subtitle-top {
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 2.5px;
+      color: #888;
+      margin-bottom: 14px;
     }
 
     h1 {
       font-size: 42px;
+      line-height: 1.2;
       margin: 0;
       font-weight: 600;
-    }
-
-    .subtitle-top {
-      font-size: 13px;
-      letter-spacing: 2px;
-      color: #888;
-      margin-bottom: 10px;
+      letter-spacing: -1px;
     }
 
     .header-text {
       max-width: 700px;
       margin: 25px auto 0;
-      font-size: 15px;
-      line-height: 1.6;
-      color: #444;
       padding: 0 10px;
+      font-size: 15px;
+      line-height: 1.8;
+      color: #555;
     }
+
+    .header-text p {
+      margin: 0 0 16px;
+    }
+
+    .header-text p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* =========================
+       Divider
+    ========================= */
 
     .divider {
-      border: none;
-      border-top: 1px solid #e5e5e5;
+      width: calc(100% - 40px);
       max-width: 900px;
-      margin: 30px auto;
+      border: none;
+      border-top: 1px solid #e2e2e2;
+      margin: 24px auto 16px;
     }
+
+    /* =========================
+       Book grid
+       Desktop: 3 columns
+    ========================= */
 
     .container {
+      width: 100%;
       max-width: 1100px;
-      margin: auto;
-      padding: 20px 16px 40px;
+      margin: 0 auto;
+      padding: 24px 20px 40px;
+
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 22px;
+
+      align-items: stretch;
     }
 
+    /* =========================
+       Book cards
+    ========================= */
+
     .book {
-      background: white;
+      background: #fff;
+      border: 1px solid rgba(0, 0, 0, 0.035);
       border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.05);
-      transition: all 0.25s ease;
-      cursor: pointer; /* 🔥 关键：提示可点击 */
+
+      padding: 24px 22px;
+      min-width: 0;
+      min-height: 145px;
+
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+
+      box-shadow: 0 5px 18px rgba(0, 0, 0, 0.035);
+
+      cursor: pointer;
+
+      transition:
+        transform 0.22s ease,
+        box-shadow 0.22s ease,
+        border-color 0.22s ease;
     }
 
     .book:hover {
       transform: translateY(-4px);
-      box-shadow: 0 12px 25px rgba(0,0,0,0.08);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.075);
+      border-color: rgba(0, 0, 0, 0.08);
+    }
+
+    .book:focus-visible {
+      outline: 2px solid #555;
+      outline-offset: 4px;
     }
 
     .book h3 {
       margin: 0;
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 600;
+      line-height: 1.55;
+      overflow-wrap: anywhere;
     }
 
     .book p {
-      font-size: 14px;
-      color: #666;
-      margin: 10px 0 16px;
+      margin: 12px 0 0;
+      font-size: 13px;
+      font-weight: 300;
+      color: #707070;
+      line-height: 1.7;
+      overflow-wrap: anywhere;
     }
 
+    /* =========================
+       Footer
+    ========================= */
+
     footer {
+      width: 100%;
+      margin-top: auto;
+      padding: 24px 16px 30px;
+
       text-align: center;
-      padding: 20px 10px 30px;
+
       font-size: 12px;
+      font-weight: 300;
+      line-height: 1.6;
       color: #888;
     }
 
-    /* 手机优化 */
-    @media (max-width: 600px) {
+    /* =========================
+       Tablet
+       2 columns
+    ========================= */
+
+    @media (max-width: 800px) {
       header {
-        padding: 50px 15px 20px;
+        padding: 60px 20px 30px;
+      }
+
+      h1 {
+        font-size: 36px;
+      }
+
+      .container {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+        padding: 22px 20px 32px;
+      }
+
+      .book {
+        padding: 22px 20px;
+      }
+    }
+
+    /* =========================
+       Mobile
+       1 column
+    ========================= */
+
+    @media (max-width: 520px) {
+      header {
+        padding: 48px 18px 24px;
+      }
+
+      .subtitle-top {
+        font-size: 10px;
+        letter-spacing: 2px;
       }
 
       h1 {
         font-size: 30px;
+        letter-spacing: -0.5px;
       }
 
       .header-text {
+        margin-top: 20px;
+        padding: 0;
         font-size: 14px;
+        line-height: 1.75;
+      }
+
+      .divider {
+        width: calc(100% - 36px);
+        margin: 20px auto 10px;
       }
 
       .container {
-        padding: 10px 12px 20px;
-        gap: 16px;
+        grid-template-columns: 1fr;
+        gap: 14px;
+        padding: 16px 18px 28px;
       }
 
       .book {
-        padding: 18px;
+        min-height: auto;
+        padding: 21px;
+        border-radius: 14px;
+      }
+
+      .book h3 {
+        font-size: 16px;
+      }
+
+      .book p {
+        font-size: 13px;
+        margin-top: 8px;
+      }
+
+      footer {
+        padding: 22px 16px 26px;
+      }
+    }
+
+    /* =========================
+       Reduced motion accessibility
+    ========================= */
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+
+      .book {
+        transition: none;
+      }
+
+      .book:hover {
+        transform: none;
       }
     }
 
@@ -120,72 +286,137 @@
 
 <body>
 
-<header>
+  <!-- =========================
+       Website header
+  ========================= -->
 
-  <div class="subtitle-top">
-    THE OFFICIAL WEBSITE OF
-  </div>
+  <header>
 
-  <h1>Patrick Ashley Ernest</h1>
+    <div class="subtitle-top">
+      THE OFFICIAL WEBSITE OF
+    </div>
 
-  <div class="header-text">
-    <p>
-      This is the on-line home of me, Pat Ernest. It is a repository for my legacy documents, 
-      to be held in perpetuity.
-    </p>
+    <h1>Patrick Ashley Ernest</h1>
 
-    <p>
-      It is hoped that those interested in perusing these texts will have a greater appreciation 
-      of my family, my wife and of a bloke born and raised in the pre-digital era.
-    </p>
-  </div>
+    <div class="header-text">
 
-</header>
+      <p>
+        This is the on-line home of me, Pat Ernest. It is a repository
+        for my legacy documents, to be held in perpetuity.
+      </p>
 
-<hr class="divider">
+      <p>
+        It is hoped that those interested in perusing these texts will
+        have a greater appreciation of my family, my wife and of a bloke
+        born and raised in the pre-digital era.
+      </p>
 
-<div class="container">
+    </div>
 
-  <div class="book" onclick="openBook('importance-me.pdf')">
-    <h3>The Importance of Being... Me</h3>
-    <p>A reflective personal journey.</p>
-  </div>
+  </header>
 
-  <div class="book" onclick="openBook('coronavirus-journal-2.pdf')">
-    <h3>Coronavirus Journal 2</h3>
-    <p>Thoughts and records during the pandemic.</p>
-  </div>
+  <hr class="divider">
 
-  <div class="book" onclick="openBook('busy-people.pdf')">
-    <h3>Memoir – Busy People Make Time</h3>
-    <p>On priorities, life, and time.</p>
-  </div>
+  <!-- =========================
+       Book collection
+       3 books per row on desktop
+  ========================= -->
 
-  <div class="book" onclick="openBook('harold-ernest.pdf')">
-    <h3>Harold Ernest</h3>
-    <p>A Search in Ernest.</p>
-  </div>
-  
-<div class="book" onclick="openBook('my-diarised-life-1988-2019.pdf')">
-  <h3>My Diarised Life 1988–2019</h3>
-  <p>My diary and journal entries during my working life.</p>
-</div>
+  <main class="container">
 
-<div class="book" onclick="openBook('my-diarised-life-retirement-2020-2025.pdf')">
-  <h3>My Diarised Life - in Retirement - 2020–2025</h3>
-  <p>My diary and journal entries as a retiree.</p>
-</div>
-  
-<footer class="site-footer">
-  &copy; 2026 Patrick Ashley Ernest
-</footer>
+    <div
+      class="book"
+      role="link"
+      tabindex="0"
+      onclick="openBook('importance-me.pdf')"
+      onkeydown="handleBookKey(event, 'importance-me.pdf')"
+    >
+      <h3>The Importance of Being... Me</h3>
+      <p>A reflective personal journey.</p>
+    </div>
 
-<!-- 🔥 关键新增代码：控制跳转到 reader.html -->
-<script>
-function openBook(file) {
-  window.location.href = "reader.html?book=" + file;
-}
-</script>
+    <div
+      class="book"
+      role="link"
+      tabindex="0"
+      onclick="openBook('coronavirus-journal-2.pdf')"
+      onkeydown="handleBookKey(event, 'coronavirus-journal-2.pdf')"
+    >
+      <h3>Coronavirus Journal 2</h3>
+      <p>Thoughts and records during the pandemic.</p>
+    </div>
+
+    <div
+      class="book"
+      role="link"
+      tabindex="0"
+      onclick="openBook('busy-people.pdf')"
+      onkeydown="handleBookKey(event, 'busy-people.pdf')"
+    >
+      <h3>Memoir – Busy People Make Time</h3>
+      <p>On priorities, life, and time.</p>
+    </div>
+
+    <div
+      class="book"
+      role="link"
+      tabindex="0"
+      onclick="openBook('harold-ernest.pdf')"
+      onkeydown="handleBookKey(event, 'harold-ernest.pdf')"
+    >
+      <h3>Harold Ernest</h3>
+      <p>A Search in Ernest.</p>
+    </div>
+
+    <div
+      class="book"
+      role="link"
+      tabindex="0"
+      onclick="openBook('my-diarised-life-1988-2019.pdf')"
+      onkeydown="handleBookKey(event, 'my-diarised-life-1988-2019.pdf')"
+    >
+      <h3>My Diarised Life 1988–2019</h3>
+      <p>My diary and journal entries during my working life.</p>
+    </div>
+
+    <div
+      class="book"
+      role="link"
+      tabindex="0"
+      onclick="openBook('my-diarised-life-retirement-2020-2025.pdf')"
+      onkeydown="handleBookKey(event, 'my-diarised-life-retirement-2020-2025.pdf')"
+    >
+      <h3>My Diarised Life - in Retirement - 2020–2025</h3>
+      <p>My diary and journal entries as a retiree.</p>
+    </div>
+
+  </main>
+
+  <!-- =========================
+       Copyright footer
+  ========================= -->
+
+  <footer>
+    &copy; 2026 Patrick Ashley Ernest
+  </footer>
+
+  <!-- =========================
+       Book navigation
+  ========================= -->
+
+  <script>
+    function openBook(file) {
+      window.location.href =
+        "reader.html?book=" + encodeURIComponent(file);
+    }
+
+    function handleBookKey(event, file) {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openBook(file);
+      }
+    }
+  </script>
 
 </body>
 </html>
